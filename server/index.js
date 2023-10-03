@@ -5,7 +5,7 @@ const database = require("./Config/database");
 const User = require("./Models/UserSchema");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const cookieParser = require('cookie-parser');
+const cookieParser = require("cookie-parser");
 
 const bcryptSalt = bcrypt.genSaltSync(10);
 const jwtSecret = "adkadoenfdd3235";
@@ -43,54 +43,47 @@ app.post("/register", async (req, res) => {
 
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
-    const userDoc = await User.findOne({ email });
-    if (userDoc) {
-      const passOk = bcrypt.compareSync(password, userDoc.password);
-      if (passOk) {
-        jwt.sign(
-          { 
-            email: userDoc.email, 
-            id: userDoc._id,
-            },
-          jwtSecret,
-          {},
-          (err, token) => {
-            if (err) throw err;
-            res.cookie("token",token).json(userDoc);
-          });
-          
-      } else {
-        res.status(422).json("Pass not matched");
-      }
+  const userDoc = await User.findOne({ email });
+  if (userDoc) {
+    const passOk = bcrypt.compareSync(password, userDoc.password);
+    if (passOk) {
+      jwt.sign(
+        {
+          email: userDoc.email,
+          id: userDoc._id,
+        },
+        jwtSecret,
+        {},
+        (err, token) => {
+          if (err) throw err;
+          res.cookie("token", token).json(userDoc);
+        }
+      );
     } else {
-      res.json("not found");
+      res.status(422).json("Pass not matched");
     }
+  } else {
+    res.json("not found");
+  }
 });
 
+app.get("/profile", (req, res) => {
+  const { token } = req.cookies;
+  if (token) {
+    jwt.verify(token, jwtSecret, {}, async (err, userData) => {
+      if (err) throw err;
 
-app.get('/profile',(req,res)=>{
-  const {token} = req.cookies;
-  if(token){
-    jwt.verify(token , jwtSecret,{},async(err,userData)=>{
-      if(err) throw err;
-
-     const {name,email,_id} = await User.findById(userData.id);
-      res.json({name,email,_id});
-    })
-  }else{
+      const { name, email, _id } = await User.findById(userData.id);
+      res.json({ name, email, _id });
+    });
+  } else {
     res.json(null);
   }
-  
 });
 
-app.post('/logout',(req,res)=>{
-
-  res.cookie('token','').json(true);
-} );
-
-
-
-
+app.post("/logout", (req, res) => {
+  res.cookie("token", "").json(true);
+});
 
 app.listen(4000, () => {
   console.log("app is running on port no 4000");
